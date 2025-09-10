@@ -2,52 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { EventCard } from "@/components/events/EventCard";
+import { useEvents } from "@/contexts/EventsContext";
 import { Calendar, Users, Sparkles, ArrowRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  // Mock data for featured events
-  const featuredEvents = [
-    {
-      id: "1",
-      title: "Tech Innovation Summit 2024",
-      description: "Join industry leaders for a day of cutting-edge technology discussions and networking.",
-      creator: { name: "Sarah Johnson", avatar: "/placeholder-avatar.jpg" },
-      date: "March 15, 2024",
-      time: "9:00 AM - 6:00 PM",
-      location: "San Francisco Convention Center",
-      capacity: 500,
-      booked: 342,
-      category: "Technology",
-      image: "/placeholder-tech-event.jpg"
-    },
-    {
-      id: "2", 
-      title: "Creative Workshop Series",
-      description: "Unleash your creativity in this hands-on workshop covering design thinking and innovation.",
-      creator: { name: "Mike Chen", avatar: "/placeholder-avatar2.jpg" },
-      date: "March 20, 2024",
-      time: "2:00 PM - 5:00 PM",
-      location: "Downtown Art Studio",
-      capacity: 25,
-      booked: 18,
-      category: "Workshop",
-      image: "/placeholder-workshop.jpg"
-    },
-    {
-      id: "3",
-      title: "Community Food Festival",
-      description: "Celebrate local cuisine and connect with your neighbors at our annual food festival.",
-      creator: { name: "Emma Rodriguez", avatar: "/placeholder-avatar3.jpg" },
-      date: "March 25, 2024", 
-      time: "11:00 AM - 8:00 PM",
-      location: "Central Park",
-      capacity: 1000,
-      booked: 756,
-      category: "Community",
-      image: "/placeholder-food.jpg"
-    }
-  ];
+  const { featuredEvents } = useEvents();
 
   const stats = [
     { label: "Active Events", value: "1,200+", icon: Calendar },
@@ -135,7 +95,6 @@ const Index = () => {
               <EventCard 
                 key={event.id} 
                 event={event}
-                onBook={() => console.log("Book event:", event.id)}
               />
             ))}
           </div>

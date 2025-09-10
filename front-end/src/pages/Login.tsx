@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,12 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string()
+    .min(2, "Name must be at least 2 characters")
+    .regex(/^[a-zA-Z\s]+$/, "Name should only contain letters and spaces")
+    .refine((name) => name.trim().split(/\s+/).length >= 2, {
+      message: "Please enter your full name (first and last name)",
+    }),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
@@ -35,8 +40,15 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { login, register, isLoading, error } = useAuth();
+  const { login, register, loading, error, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -48,18 +60,24 @@ const Login = () => {
 
   const onLoginSubmit = async (data: LoginFormData) => {
     try {
+      console.log('🔐 Attempting login...');
       await login(data.email, data.password);
+      console.log('✅ Login successful, navigating to dashboard...');
       navigate("/dashboard");
     } catch (err) {
+      console.error('❌ Login failed:', err);
       // Error is handled by the auth context
     }
   };
 
   const onRegisterSubmit = async (data: RegisterFormData) => {
     try {
+      console.log('📝 Attempting registration...');
       await register(data.name, data.email, data.password);
+      console.log('✅ Registration successful, navigating to dashboard...');
       navigate("/dashboard");
     } catch (err) {
+      console.error('❌ Registration failed:', err);
       // Error is handled by the auth context
     }
   };
@@ -149,9 +167,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full btn-hero text-white"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
                     Signing in...
@@ -253,9 +271,9 @@ const Login = () => {
               <Button 
                 type="submit" 
                 className="w-full btn-hero text-white"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
                     Creating account...

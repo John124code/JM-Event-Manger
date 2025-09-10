@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Calendar, Mail, MapPin, Phone, Twitter, Facebook, Instagram, Linkedin, Youtube, Globe, Shield, Heart, Zap, Users, Star, ArrowRight } from "lucide-react";
+import { Calendar, Mail, MapPin, Phone, Twitter, Linkedin, Globe, Shield, Heart, Zap, Users, Star, ArrowRight, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,11 +41,9 @@ export const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: Twitter, href: "https://twitter.com/jmevents", label: "Twitter" },
-    { icon: Facebook, href: "https://facebook.com/jmevents", label: "Facebook" },
-    { icon: Instagram, href: "https://instagram.com/jmevents", label: "Instagram" },
-    { icon: Linkedin, href: "https://linkedin.com/company/jmevents", label: "LinkedIn" },
-    { icon: Youtube, href: "https://youtube.com/@jmevents", label: "YouTube" },
+    { icon: Twitter, href: "https://twitter.com/JohnOnStack", label: "Twitter" },
+    { icon: Linkedin, href: "https://linkedin.com/in/john-olawoye-b16657361", label: "LinkedIn" },
+    { icon: Github, href: "https://github.com/John124code", label: "GitHub" },
   ];
 
   const features = [
@@ -152,19 +150,19 @@ export const Footer = () => {
                   <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Mail className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-muted-foreground">hello@jmevents.com</span>
+                  <span className="text-muted-foreground">miracleolawoye7@gmail.com</span>
                 </div>
                 <div className="flex items-center space-x-3 text-sm">
                   <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Phone className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-muted-foreground">+1 (555) 123-4567</span>
+                  <span className="text-muted-foreground">+234 9137917087</span>
                 </div>
                 <div className="flex items-center space-x-3 text-sm">
                   <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <MapPin className="w-4 h-4 text-primary" />
                   </div>
-                  <span className="text-muted-foreground">San Francisco, CA</span>
+                  <span className="text-muted-foreground">Lagos, Nigeria.</span>
                 </div>
               </div>
 
@@ -192,16 +190,28 @@ export const Footer = () => {
                 Platform
               </h3>
               <ul className="space-y-3">
-                {footerLinks.platform.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm hover:underline"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {footerLinks.platform.map((link) => {
+                  // Only make these specific links clickable
+                  const clickableLinks = ["/about", "/events", "/create", "/dashboard"];
+                  const isClickable = clickableLinks.includes(link.href);
+                  
+                  return (
+                    <li key={link.href}>
+                      {isClickable ? (
+                        <Link
+                          to={link.href}
+                          className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm hover:underline"
+                        >
+                          {link.label}
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground text-sm cursor-default">
+                          {link.label}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
@@ -211,12 +221,9 @@ export const Footer = () => {
               <ul className="space-y-3">
                 {footerLinks.support.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm hover:underline"
-                    >
+                    <span className="text-muted-foreground text-sm cursor-default">
                       {link.label}
-                    </Link>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -228,12 +235,9 @@ export const Footer = () => {
               <ul className="space-y-3">
                 {footerLinks.legal.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm hover:underline"
-                    >
+                    <span className="text-muted-foreground text-sm cursor-default">
                       {link.label}
-                    </Link>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -245,12 +249,9 @@ export const Footer = () => {
               <ul className="space-y-3">
                 {footerLinks.community.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      to={link.href}
-                      className="text-muted-foreground hover:text-primary transition-colors duration-200 text-sm hover:underline"
-                    >
+                    <span className="text-muted-foreground text-sm cursor-default">
                       {link.label}
-                    </Link>
+                    </span>
                   </li>
                 ))}
               </ul>

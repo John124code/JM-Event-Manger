@@ -197,6 +197,20 @@
     box-shadow: var(--shadow-hover);
     transform: translateY(-2px);
   }
+
+  /* Solid Dropdown - Non-transparent alternative to glass */
+  .dropdown-solid {
+    background: hsl(var(--background) / 0.98);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  }
+
+  .dark .dropdown-solid {
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
   
   /* Button Variants */
   .btn-hero {
@@ -219,6 +233,18 @@
   .btn-glass:hover {
     background: hsl(var(--secondary-hover));
     transform: translateY(-1px);
+  }
+  
+  .btn-success {
+    @apply relative overflow-hidden;
+    background: linear-gradient(135deg, hsl(var(--success)), hsl(140 60% 60%));
+    box-shadow: 0 4px 15px hsla(var(--success), 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px hsla(var(--success), 0.4);
   }
   
   /* Logo Animation */
@@ -264,5 +290,37 @@
   .hero-bg {
     background: radial-gradient(ellipse at top, hsl(var(--primary-glow) / 0.3), transparent 50%),
                 radial-gradient(ellipse at bottom, hsl(var(--accent) / 0.2), transparent 50%);
+  }
+
+  /* Select Dropdown Overrides - Fix for glass transparency issue */
+  [data-radix-select-content] {
+    background: hsl(var(--background)) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .dark [data-radix-select-content] {
+    background: hsl(var(--background) / 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* Ticket Dropdown Specific Styles */
+  [data-radix-select-content].max-w-md {
+    min-width: 300px !important;
+    max-width: 400px !important;
+  }
+
+  [data-radix-select-item] {
+    padding: 8px 12px !important;
+    min-height: auto !important;
+  }
+
+  /* Ensure proper text wrapping in select items */
+  [data-radix-select-item] > div {
+    width: 100% !important;
+    word-wrap: break-word !important;
   }
 }

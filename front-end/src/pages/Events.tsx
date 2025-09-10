@@ -2,97 +2,30 @@ import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { EventCard } from "@/components/events/EventCard";
+import { useEvents } from "@/contexts/EventsContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const { allEvents, cancelEvent } = useEvents();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  // Extended mock data for all events
-  const allEvents = [
-    {
-      id: "1",
-      title: "Tech Innovation Summit 2024",
-      description: "Join industry leaders for a day of cutting-edge technology discussions and networking.",
-      creator: { name: "Sarah Johnson", avatar: "/placeholder-avatar.jpg" },
-      date: "March 15, 2024",
-      time: "9:00 AM - 6:00 PM",
-      location: "San Francisco Convention Center",
-      capacity: 500,
-      booked: 342,
-      category: "Technology",
-      image: "/placeholder-tech-event.jpg"
-    },
-    {
-      id: "2", 
-      title: "Creative Workshop Series",
-      description: "Unleash your creativity in this hands-on workshop covering design thinking and innovation.",
-      creator: { name: "Mike Chen", avatar: "/placeholder-avatar2.jpg" },
-      date: "March 20, 2024",
-      time: "2:00 PM - 5:00 PM",
-      location: "Downtown Art Studio",
-      capacity: 25,
-      booked: 18,
-      category: "Workshop",
-      image: "/placeholder-workshop.jpg"
-    },
-    {
-      id: "3",
-      title: "Community Food Festival",
-      description: "Celebrate local cuisine and connect with your neighbors at our annual food festival.",
-      creator: { name: "Emma Rodriguez", avatar: "/placeholder-avatar3.jpg" },
-      date: "March 25, 2024", 
-      time: "11:00 AM - 8:00 PM",
-      location: "Central Park",
-      capacity: 1000,
-      booked: 756,
-      category: "Community",
-      image: "/placeholder-food.jpg"
-    },
-    {
-      id: "4",
-      title: "Photography Masterclass",
-      description: "Learn advanced photography techniques from professional photographers.",
-      creator: { name: "Alex Kim", avatar: "/placeholder-avatar4.jpg" },
-      date: "April 2, 2024",
-      time: "10:00 AM - 4:00 PM",
-      location: "Photo Studio Downtown",
-      capacity: 15,
-      booked: 12,
-      category: "Workshop",
-      image: "/placeholder-photo.jpg"
-    },
-    {
-      id: "5",
-      title: "Startup Pitch Night",
-      description: "Watch local entrepreneurs pitch their innovative ideas to investors.",
-      creator: { name: "Jordan Liu", avatar: "/placeholder-avatar5.jpg" },
-      date: "April 5, 2024",
-      time: "6:00 PM - 9:00 PM",
-      location: "Innovation Hub",
-      capacity: 200,
-      booked: 156,
-      category: "Business",
-      image: "/placeholder-pitch.jpg"
-    },
-    {
-      id: "6",
-      title: "Music Festival 2024",
-      description: "Three days of amazing live music featuring local and international artists.",
-      creator: { name: "Sofia Martinez", avatar: "/placeholder-avatar6.jpg" },
-      date: "April 12-14, 2024",
-      time: "12:00 PM - 11:00 PM",
-      location: "City Park Amphitheater",
-      capacity: 5000,
-      booked: 3200,
-      category: "Entertainment",
-      image: "/placeholder-music.jpg"
+  const handleEditEvent = (eventId: string) => {
+    navigate(`/edit?edit=${eventId}`);
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      cancelEvent(eventId);
     }
-  ];
+  };
 
   const categories = [
     { value: "all", label: "All Categories" },
@@ -152,7 +85,7 @@ const Events = () => {
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dropdown-solid">
                   {categories.map((category) => (
                     <SelectItem key={category.value} value={category.value}>
                       {category.label}
@@ -185,13 +118,19 @@ const Events = () => {
           
           {filteredEvents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredEvents.map((event) => (
-                <EventCard 
-                  key={event.id} 
-                  event={event}
-                  onBook={() => console.log("Book event:", event.id)}
-                />
-              ))}
+              {filteredEvents.map((event) => {
+                const isOwner = user && event.creator?.id === user.id;
+                return (
+                  <EventCard 
+                    key={event.id} 
+                    event={event}
+                    isOwner={isOwner}
+                    onEdit={isOwner ? () => handleEditEvent(event.id) : undefined}
+                    onDelete={isOwner ? () => handleDeleteEvent(event.id) : undefined}
+                    onBook={() => console.log("Book event:", event.id)}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-16">

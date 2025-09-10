@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEvents } from "@/contexts/EventsContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading";
-import { Calendar, Clock, MapPin, Users, Image as ImageIcon, ArrowLeft, Check, Upload, X, Video, FileImage, Play } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { Calendar, Clock, MapPin, Users, Image as ImageIcon, ArrowLeft, Check, Upload, X, Video, FileImage, Play, Plus, Trash2, DollarSign, CreditCard, Smartphone } from "lucide-react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+
+const ticketTypeSchema = z.object({
+  name: z.string().min(1, "Ticket name is required"),
+  price: z.number().min(0, "Price must be 0 or greater"),
+  description: z.string().optional(),
+  available: z.number().min(1, "Must have at least 1 ticket available"),
+});
+
+const paymentMethodSchema = z.object({
+  type: z.enum(['bank_transfer', 'cash_app']),
+  details: z.object({
+    bankName: z.string().optional(),
+    accountNumber: z.string().optional(),
+    username: z.string().optional(),
+  }),
+});
 
 const eventSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -25,12 +42,15 @@ const eventSchema = z.object({
   location: z.string().min(3, "Location must be at least 3 characters"),
   capacity: z.number().min(1, "Capacity must be at least 1").max(10000, "Capacity cannot exceed 10,000"),
   image: z.string().optional(),
+  ticketTypes: z.array(ticketTypeSchema).min(1, "At least one ticket type is required"),
+  paymentMethods: z.array(paymentMethodSchema).min(1, "At least one payment method is required"),
 });
 
 type EventFormData = z.infer<typeof eventSchema>;
 
 const CreateEvent = () => {
   const { user } = useAuth();
+  const { addEvent } = useEvents();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -52,8 +72,62 @@ const CreateEvent = () => {
       location: "",
       capacity: 50,
       image: "",
+      ticketTypes: [
+        {
+          name: "General Admission",
+          price: 0,
+          description: "Standard event access",
+          available: 50,
+        }
+      ],
+      paymentMethods: [
+        {
+          type: "bank_transfer",
+          details: {
+            bankName: "",
+            accountNumber: "",
+          }
+        }
+      ],
     },
   });
+
+  const { fields: ticketFields, append: appendTicket, remove: removeTicket } = useFieldArray({
+    control: form.control,
+    name: "ticketTypes",
+  });
+
+  const { fields: paymentFields, append: appendPayment, remove: removePayment } = useFieldArray({
+    control: form.control,
+    name: "paymentMethods",
+  });
+
+  const addTicketType = (type: 'general' | 'vip' | 'early_bird' | 'student') => {
+    const ticketTypes = {
+      general: { name: "General Admission", price: 25, description: "Standard event access" },
+      vip: { name: "VIP", price: 75, description: "Premium access with exclusive benefits" },
+      early_bird: { name: "Early Bird", price: 20, description: "Limited time discount" },
+      student: { name: "Student", price: 15, description: "Student discount (ID required)" },
+    };
+    
+    const ticket = ticketTypes[type];
+    appendTicket({
+      ...ticket,
+      available: Math.floor(form.getValues().capacity / ticketFields.length + 1) || 10,
+    });
+  };
+
+  const addPaymentMethod = (type: 'bank_transfer' | 'cash_app') => {
+    const defaultDetails = {
+      bank_transfer: { bankName: "", accountNumber: "" },
+      cash_app: { username: "" },
+    };
+    
+    appendPayment({
+      type,
+      details: defaultDetails[type],
+    });
+  };
 
   // Redirect if not authenticated
   if (!user) {
@@ -86,37 +160,62 @@ const CreateEvent = () => {
     setSubmitError(null);
 
     try {
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      // Create preview URL for immediate display
+      const localPreviewUrl = URL.createObjectURL(file);
+      setPreviewUrl(localPreviewUrl);
       setUploadedFile(file);
       setMediaType(isImage ? "image" : "video");
+      setUploadProgress(20);
 
-      // Simulate API upload - replace with actual upload logic
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      clearInterval(interval);
-      setUploadProgress(100);
-      
-      setTimeout(() => {
-        setIsUploading(false);
-      }, 500);
+      // Upload to Cloudinary via backend
+      const formData = new FormData();
+      formData.append('file', file);
 
-    } catch (error) {
-      setSubmitError("Failed to upload file. Please try again.");
+      const uploadResponse = await fetch('http://localhost:3001/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: formData,
+      });
+
+      setUploadProgress(60);
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const uploadResult = await uploadResponse.json();
+      setUploadProgress(90);
+
+      if (uploadResult.success) {
+        // Replace preview URL with Cloudinary URL
+        URL.revokeObjectURL(localPreviewUrl);
+        setPreviewUrl(uploadResult.data.url);
+        setUploadProgress(100);
+        
+        // Update form with Cloudinary URL
+        form.setValue('image', uploadResult.data.url);
+        
+        setTimeout(() => {
+          setIsUploading(false);
+        }, 500);
+      } else {
+        throw new Error(uploadResult.message || 'Upload failed');
+      }
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setSubmitError(`Failed to upload file: ${error.message}`);
       setIsUploading(false);
       setUploadProgress(0);
+      
+      // Clean up preview URL on error
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      setUploadedFile(null);
     }
   };
 
@@ -135,37 +234,105 @@ const CreateEvent = () => {
     setSubmitError(null);
 
     try {
-      // Simulate API call - replace with actual API integration
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock event creation logic
+      // Create the event data with Cloudinary image URL
+      const eventData = {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        date: data.date,
+        time: data.time,
+        location: data.location,
+        capacity: data.capacity,
+        image: data.image || previewUrl || "/placeholder-tech-event.jpg", // Use Cloudinary URL if available
+        ticketTypes: data.ticketTypes,
+        paymentMethods: data.paymentMethods,
+        media: uploadedFile ? {
+          type: mediaType as 'image' | 'video',
+          url: previewUrl,
+          fileName: uploadedFile.name,
+        } : undefined,
+      };
+
+      // Try to create event via API first
+      try {
+        const response = await fetch('http://localhost:3001/api/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: JSON.stringify(eventData),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            // Add event to context using API response
+            addEvent(result.data.event);
+            setIsSuccess(true);
+            setTimeout(() => {
+              navigate('/events');
+            }, 2000);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.warn('API creation failed, falling back to local creation:', apiError);
+      }
+
+      // Fallback: Create event locally if API fails
       const newEvent = {
         id: Date.now().toString(),
-        ...data,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        date: data.date,
+        time: data.time,
+        location: data.location,
+        capacity: data.capacity,
         creator: {
-          name: user.name,
-          avatar: user.avatar,
+          id: user?.id || "1",
+          name: user?.name || "Anonymous",
+          avatar: user?.avatar,
         },
         booked: 0,
-        image: previewUrl || data.image || "/placeholder-tech-event.jpg",
+        image: data.image || previewUrl || "/placeholder-tech-event.jpg",
         media: uploadedFile ? {
-          type: mediaType,
+          type: mediaType as 'image' | 'video',
           url: previewUrl,
           fileName: uploadedFile.name,
         } : null,
+        status: 'active' as const,
+        views: 0,
+        ratings: [],
+        ticketTypes: data.ticketTypes.map((ticket, index) => ({
+          id: `${Date.now()}-${index}`,
+          name: ticket.name,
+          price: ticket.price,
+          description: ticket.description,
+          available: ticket.available,
+          sold: 0,
+        })),
+        paymentMethods: data.paymentMethods.map(method => ({
+          type: method.type,
+          details: method.details,
+        })),
+        createdAt: new Date().toISOString(),
       };
 
-      console.log("Created event:", newEvent);
+      // Add event to global context
+      addEvent(newEvent);
       
       setIsSuccess(true);
       
-      // Redirect to events page after success
+      // Redirect to events page
       setTimeout(() => {
         navigate("/events");
       }, 2000);
-      
-    } catch (error) {
-      setSubmitError("Failed to create event. Please try again.");
+
+    } catch (error: any) {
+      console.error('Create event error:', error);
+      setSubmitError(error.message || 'Failed to create event. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -276,11 +443,14 @@ const CreateEvent = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
-                    <Select onValueChange={(value) => form.setValue("category", value)}>
+                    <Select 
+                      value={form.watch("category")} 
+                      onValueChange={(value) => form.setValue("category", value)}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="dropdown-solid">
                         {categories.map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
@@ -496,6 +666,199 @@ const CreateEvent = () => {
                     </Card>
                   </div>
                 )}
+              </div>
+
+              {/* Ticket Types */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-semibold text-foreground flex items-center">
+                    <CreditCard className="w-6 h-6 mr-2 text-primary" />
+                    Ticket Types
+                  </h2>
+                  <div className="flex gap-2">
+                    <Select onValueChange={(value) => addTicketType(value as any)}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Add Ticket" />
+                      </SelectTrigger>
+                      <SelectContent className="dropdown-solid">
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="vip">VIP</SelectItem>
+                        <SelectItem value="early_bird">Early Bird</SelectItem>
+                        <SelectItem value="student">Student</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {ticketFields.map((field, index) => (
+                    <Card key={field.id} className="glass p-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <h3 className="font-medium text-foreground">Ticket Type #{index + 1}</h3>
+                        {ticketFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTicket(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`ticketTypes.${index}.name`}>Ticket Name *</Label>
+                          <Input
+                            placeholder="e.g., General Admission"
+                            {...form.register(`ticketTypes.${index}.name`)}
+                          />
+                          {form.formState.errors.ticketTypes?.[index]?.name && (
+                            <p className="text-sm text-destructive">
+                              {form.formState.errors.ticketTypes[index]?.name?.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`ticketTypes.${index}.price`}>Price ($) *</Label>
+                          <div className="relative">
+                            <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              className="pl-10"
+                              {...form.register(`ticketTypes.${index}.price`, { valueAsNumber: true })}
+                            />
+                          </div>
+                          {form.formState.errors.ticketTypes?.[index]?.price && (
+                            <p className="text-sm text-destructive">
+                              {form.formState.errors.ticketTypes[index]?.price?.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`ticketTypes.${index}.available`}>Available Tickets *</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="50"
+                            {...form.register(`ticketTypes.${index}.available`, { valueAsNumber: true })}
+                          />
+                          {form.formState.errors.ticketTypes?.[index]?.available && (
+                            <p className="text-sm text-destructive">
+                              {form.formState.errors.ticketTypes[index]?.available?.message}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`ticketTypes.${index}.description`}>Description</Label>
+                          <Input
+                            placeholder="Optional description"
+                            {...form.register(`ticketTypes.${index}.description`)}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-semibold text-foreground flex items-center">
+                    <DollarSign className="w-6 h-6 mr-2 text-primary" />
+                    Payment Methods
+                  </h2>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addPaymentMethod('bank_transfer')}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Bank Transfer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => addPaymentMethod('cash_app')}
+                    >
+                      <Smartphone className="w-4 h-4 mr-2" />
+                      Cash App
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {paymentFields.map((field, index) => (
+                    <Card key={field.id} className="glass p-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          {form.watch(`paymentMethods.${index}.type`) === 'bank_transfer' ? (
+                            <DollarSign className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <Smartphone className="w-5 h-5 text-blue-600" />
+                          )}
+                          <h3 className="font-medium text-foreground capitalize">
+                            {form.watch(`paymentMethods.${index}.type`)?.replace('_', ' ')} #{index + 1}
+                          </h3>
+                        </div>
+                        {paymentFields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removePayment(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      {form.watch(`paymentMethods.${index}.type`) === 'bank_transfer' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`paymentMethods.${index}.details.bankName`}>Bank Name *</Label>
+                            <Input
+                              placeholder="e.g., Chase Bank"
+                              {...form.register(`paymentMethods.${index}.details.bankName`)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`paymentMethods.${index}.details.accountNumber`}>Account Number *</Label>
+                            <Input
+                              placeholder="Account number"
+                              {...form.register(`paymentMethods.${index}.details.accountNumber`)}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label htmlFor={`paymentMethods.${index}.details.username`}>Cash App Username *</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-3 text-muted-foreground">$</span>
+                            <Input
+                              placeholder="username"
+                              className="pl-8"
+                              {...form.register(`paymentMethods.${index}.details.username`)}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  ))}
+                </div>
               </div>
 
               {/* Submit Button */}

@@ -2,8 +2,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Clock, Users, MapPin, Edit, Trash2 } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, Edit, Trash2, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useUserProfile } from "@/contexts/UserProfileContext";
+import { useEvents } from "@/contexts/EventsContext";
+import { getEventPlaceholder, handleImageError } from "@/lib/imageUtils";
 
 interface EventCardProps {
   event: {
@@ -21,11 +24,20 @@ interface EventCardProps {
     booked: number;
     image?: string;
     category: string;
+    status?: 'active' | 'upcoming' | 'cancelled' | 'completed';
+    ticketTypes?: {
+      id: string;
+      name: string;
+      price: number;
+      description?: string;
+      available: number;
+    }[];
   };
   isOwner?: boolean;
   onBook?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  showFavorite?: boolean;
 }
 
 export const EventCard = ({ 
@@ -33,10 +45,44 @@ export const EventCard = ({
   isOwner = false, 
   onBook, 
   onEdit, 
-  onDelete 
+  onDelete,
+  showFavorite = true
 }: EventCardProps) => {
+  const { isFavorite, addToFavorites, removeFromFavorites } = useUserProfile();
+  const { isRegistered } = useEvents();
   const isFull = event.booked >= event.capacity;
   const availableSpots = event.capacity - event.booked;
+  const isEventFavorited = isFavorite(event.id);
+  const isUserRegistered = isRegistered(event.id);
+
+  // Get price range from ticket types
+  const getPriceRange = () => {
+    if (!event.ticketTypes || event.ticketTypes.length === 0) {
+      return "Free";
+    }
+    
+    const prices = event.ticketTypes.map(ticket => ticket.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    
+    if (minPrice === 0 && maxPrice === 0) {
+      return "Free";
+    } else if (minPrice === maxPrice) {
+      return `$${minPrice}`;
+    } else if (minPrice === 0) {
+      return `Free - $${maxPrice}`;
+    } else {
+      return `$${minPrice} - $${maxPrice}`;
+    }
+  };
+
+  const handleFavoriteToggle = () => {
+    if (isEventFavorited) {
+      removeFromFavorites(event.id);
+    } else {
+      addToFavorites(event.id);
+    }
+  };
 
   return (
     <Card className="glass-hover p-0 overflow-hidden group">
@@ -44,22 +90,67 @@ export const EventCard = ({
       <Link to={`/events/${event.id}`} className="block">
         <div className="relative h-48 overflow-hidden">
           <img 
-            src={event.image || "/placeholder-event.jpg"} 
+            src={event.image || getEventPlaceholder(event.category)} 
             alt={event.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={(e) => handleImageError(e, event.category)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           
-          {/* Category Badge */}
-          <Badge 
-            variant="secondary" 
-            className="absolute top-3 left-3 glass text-white border-white/20"
-          >
-            {event.category}
-          </Badge>
+          {/* Category Badge and Status */}
+          <div className="absolute top-3 left-3 flex flex-col gap-2">
+            <Badge 
+              variant="secondary" 
+              className="glass text-white border-white/20"
+            >
+              {event.category}
+            </Badge>
+            {/* Price Badge */}
+            <Badge 
+              variant="default" 
+              className="bg-green-600 text-white font-bold"
+            >
+              {getPriceRange()}
+            </Badge>
+            {isOwner && (
+              <Badge 
+                variant="default" 
+                className="bg-primary text-white"
+              >
+                My Event
+              </Badge>
+            )}
+            {event.status === 'cancelled' && (
+              <Badge 
+                variant="destructive" 
+                className="bg-destructive text-white"
+              >
+                Cancelled
+              </Badge>
+            )}
+          </div>
           
-          {/* Capacity Status */}
-          <div className="absolute top-3 right-3">
+          {/* Capacity Status and Favorite Button */}
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+            {showFavorite && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className={`w-8 h-8 p-0 rounded-full glass hover:bg-white/20 ${
+                  isEventFavorited ? 'text-red-500' : 'text-white'
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleFavoriteToggle();
+                }}
+              >
+                <Heart 
+                  className="w-4 h-4" 
+                  fill={isEventFavorited ? "currentColor" : "none"}
+                />
+              </Button>
+            )}
             <Badge 
               variant={isFull ? "destructive" : "default"}
               className={isFull ? "bg-destructive" : "bg-success text-white"}
@@ -106,6 +197,16 @@ export const EventCard = ({
           </div>
         </div>
 
+        {/* Price Display */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between p-3 glass rounded-lg border border-primary/20">
+            <span className="text-sm font-medium text-muted-foreground">Price</span>
+            <span className="text-lg font-bold text-primary">
+              {getPriceRange()}
+            </span>
+          </div>
+        </div>
+
         {/* Creator */}
         <div className="flex items-center mb-6 p-3 glass rounded-lg">
           <Avatar className="w-8 h-8 mr-3">
@@ -125,32 +226,60 @@ export const EventCard = ({
         <div className="flex items-center justify-between">
           {isOwner ? (
             <div className="flex space-x-2 w-full">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onEdit}
-                className="flex-1 btn-glass"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onDelete}
-                className="btn-glass text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              {event.status === 'cancelled' ? (
+                <div className="w-full text-center py-2">
+                  <span className="text-destructive font-medium">Event Cancelled</span>
+                </div>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onEdit}
+                    className="flex-1 btn-glass"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={onDelete}
+                    className="btn-glass text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
-            <Button 
-              className="w-full btn-hero text-white"
-              disabled={isFull}
-              onClick={onBook}
-            >
-              {isFull ? "Event Full" : "Register Now"}
-            </Button>
+            <>
+              {event.status === 'cancelled' ? (
+                <Button 
+                  className="w-full"
+                  disabled
+                  variant="secondary"
+                >
+                  Event Cancelled
+                </Button>
+              ) : isUserRegistered ? (
+                <Button 
+                  className="w-full btn-success text-white"
+                  disabled
+                >
+                  ✓ Registered
+                </Button>
+              ) : (
+                <Link to={`/events/${event.id}/payment`} className="w-full">
+                  <Button 
+                    className="w-full btn-hero text-white"
+                    disabled={isFull}
+                  >
+                    {isFull ? "Event Full" : "Register Now"}
+                  </Button>
+                </Link>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
-import { Moon, Sun, Calendar, Home, Users, Settings, LogOut, User, Plus } from "lucide-react";
+import { Moon, Sun, Calendar, Home, Users, Settings, LogOut, User, Plus, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -25,10 +25,10 @@ export const Navbar = () => {
     logout();
   };
 
-  const navItems = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/events", label: "Events", icon: Calendar },
-    ...(user ? [{ href: "/dashboard", label: "Dashboard", icon: Users }] : []),
+    const navItems = [
+    { name: 'Home', to: '/' },
+    { name: 'Events', to: '/events' },
+    { name: 'About', to: '/about' },
   ];
 
   return (
@@ -48,11 +48,10 @@ export const Navbar = () => {
           {/* Navigation Links - Center */}
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
+              const isActive = location.pathname === item.to;
               
               return (
-                <Link key={item.href} to={item.href}>
+                <Link key={item.to} to={item.to}>
                   <Button
                     variant={isActive ? "default" : "ghost"}
                     size="sm"
@@ -62,8 +61,7 @@ export const Navbar = () => {
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {item.label}
+                    {item.name}
                   </Button>
                 </Link>
               );
@@ -119,12 +117,26 @@ export const Navbar = () => {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
+                  <Link to="/profile">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                  </Link>
                   <Link to="/dashboard">
                     <DropdownMenuItem className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Dashboard
                     </DropdownMenuItem>
                   </Link>
+                  {user.role === 'admin' && (
+                    <Link to="/admin">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Admin Panel
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
                   <Link to="/create">
                     <DropdownMenuItem className="cursor-pointer">
                       <Plus className="mr-2 h-4 w-4" />
