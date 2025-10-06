@@ -67,6 +67,7 @@ npm install
 
 # Create environment file
 cp .env.example .env
+# Edit .env file with your configuration
 ```
 
 ### 3. Frontend Setup
@@ -74,8 +75,9 @@ cp .env.example .env
 cd ../front-end
 npm install
 
-# Create environment file
+# Create environment file  
 cp .env.example .env
+# Edit .env file with your configuration
 ```
 
 ## ⚙️ Configuration
@@ -117,7 +119,7 @@ VITE_NODE_ENV=development
 
 ### Development Mode
 
-1. **Start Backend Server**
+1. **Start Backend Development Server**
 ```bash
 cd backend
 npm run dev
@@ -133,19 +135,32 @@ npm run dev
 
 ### Production Build
 
-1. **Build Backend**
+1. **Build Backend for Production**
 ```bash
 cd backend
 npm run build
 npm start
 ```
 
-2. **Build Frontend**
+2. **Build Frontend for Production**
 ```bash
 cd front-end
 npm run build
 npm run preview
 ```
+
+## 📝 **Development vs Production Commands**
+
+| Command | Purpose | When to Use |
+|---------|---------|-------------|
+| `npm run dev` | Development server | While coding/testing |
+| `npm run build` | Production build | Before deployment |
+| `npm start` | Start production server | On hosting platform |
+| `npm run preview` | Preview production build | Test build locally |
+
+## 👨‍💼 Admin Access
+
+The platform includes an admin dashboard with user management capabilities. Admin accounts are created through the application's admin registration process or database seeding. Contact the system administrator for admin access credentials.
 
 ## 📁 Project Structure
 
@@ -204,15 +219,6 @@ PUT    /api/admin/users/:id/ban      # Ban/unban user
 DELETE /api/admin/users/:id          # Delete user
 ```
 
-## 👤 Default Admin Account
-
-For testing purposes, an admin account is created:
-
-```
-Email: admin@jmevent.com
-Password: admin123
-```
-
 ## 📱 Responsive Design
 
 The platform is fully responsive and optimized for:
@@ -265,14 +271,14 @@ npm test
 - **GitHub Pages**
 
 #### Backend
-- **Railway** 
-- **Render** (Recommended)
+- **Railway** (Recommended)
+- **Render**
 - **Heroku**
 
 ### Deployment Steps
 
 1. **Deploy Backend**
-   - Create Render account
+   - Create Railway account
    - Connect GitHub repository
    - Set environment variables
    - Deploy
