@@ -23,7 +23,6 @@ const PORT = process.env.PORT || 3001;
 app.use(cors({
   origin: [
     'http://localhost:8084',
-    'https://jm-events-platform.vercel.app',
     'https://jm-event-manger.vercel.app',
     process.env.CLIENT_URL || 'http://localhost:8084'
   ],
