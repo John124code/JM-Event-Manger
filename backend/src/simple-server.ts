@@ -24,9 +24,12 @@ app.use(cors({
   origin: [
     'http://localhost:8084',
     'https://jm-event-manger.vercel.app',
+    'https://jm-event-manger.vercel.app/',
     process.env.CLIENT_URL || 'http://localhost:8084'
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
@@ -887,6 +890,15 @@ const startServer = async () => {
           error: error.message
         });
       }
+    });
+    
+    // Root endpoint for testing
+    app.get('/', (req, res) => {
+      res.json({ 
+        message: 'JM EventsPlatform API is running!',
+        version: '1.0.0',
+        endpoints: ['/api/health', '/api/auth', '/api/events']
+      });
     });
     
     // Simple health check
