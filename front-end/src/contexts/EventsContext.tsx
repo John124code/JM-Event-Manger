@@ -399,6 +399,9 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setRegisteredEventIds(prev => [...prev, eventId]);
     }
 
+    // Get event details for notification
+    const event = allEvents.find(e => e.id === eventId);
+
     // Add user to registered users for this event
     const newUser: RegisteredUser = {
       id: Date.now().toString(),
@@ -415,6 +418,44 @@ export const EventsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       ...prev,
       [eventId]: [...(prev[eventId] || []), newUser]
     }));
+
+    // Create notification data for the event creator
+    if (event && typeof window !== 'undefined') {
+      const notificationData = {
+        type: 'registration' as const,
+        title: 'New Registration!',
+        message: `${newUser.name} has registered for your event`,
+        eventId: eventId,
+        eventTitle: event.title,
+        registrationData: {
+          userName: newUser.name,
+          userEmail: newUser.email,
+          userPhone: newUser.phone,
+          ticketType: newUser.ticketType,
+          paymentMethod: newUser.paymentMethod || 'Not specified',
+          paymentStatus: newUser.paymentStatus,
+          registrationDate: newUser.registrationDate,
+        },
+      };
+
+      // Store notification for event creator in localStorage
+      const creatorNotificationsKey = `notifications_${event.creator.id}`;
+      const existingNotifications = JSON.parse(localStorage.getItem(creatorNotificationsKey) || '[]');
+      const newNotification = {
+        ...notificationData,
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
+      existingNotifications.unshift(newNotification);
+      localStorage.setItem(creatorNotificationsKey, JSON.stringify(existingNotifications));
+      
+      // Dispatch custom event for real-time update if creator is currently logged in
+      const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+      if (currentUser && event.creator.id === currentUser.id) {
+        window.dispatchEvent(new CustomEvent('newNotification', { detail: newNotification }));
+      }
+    }
 
     // Increment booked count
     setAllEvents(prevEvents => 

@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/components/theme/ThemeProvider";
-import { Moon, Sun, Calendar, Home, Users, Settings, LogOut, User, Plus, Shield } from "lucide-react";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
+import { Moon, Sun, Calendar, Home, Users, Settings, LogOut, User, Plus, Shield, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -11,11 +12,16 @@ export const Navbar = () => {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -45,8 +51,8 @@ export const Navbar = () => {
             </span>
           </Link>
 
-          {/* Navigation Links - Center */}
-          <div className="hidden md:flex items-center space-x-1">
+          {/* Navigation Links - Desktop Only */}
+          <div className="hidden lg:flex items-center space-x-8">
             {navItems.map((item) => {
               const isActive = location.pathname === item.to;
               
@@ -68,8 +74,20 @@ export const Navbar = () => {
             })}
           </div>
 
-          {/* Right Side - Theme Toggle & Auth */}
-          <div className="flex items-center space-x-3">
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="w-10 h-10 p-0"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </Button>
+          </div>
+
+          {/* Right Side - Theme Toggle & Auth (Desktop) */}
+          <div className="hidden lg:flex items-center space-x-3">
             {/* Create Event Button for logged-in users */}
             {user && (
               <Link to="/create">
@@ -98,7 +116,11 @@ export const Navbar = () => {
 
             {/* Auth Section */}
             {user ? (
-              <DropdownMenu>
+              <div className="flex items-center gap-2">
+                {/* Notification Panel */}
+                <NotificationPanel />
+                
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                     <Avatar className="w-9 h-9 ring-2 ring-primary/20 hover:ring-primary/40 transition-all duration-300">
@@ -157,6 +179,7 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             ) : (
               <Link to="/login">
                 <Button size="sm" className="btn-hero text-white px-6">
@@ -167,6 +190,121 @@ export const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 top-[73px] bg-background z-40">
+          <div className="p-6 space-y-6">
+            {/* Mobile Navigation */}
+            <div className="space-y-4">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`block w-full text-left p-4 rounded-lg border transition-colors text-lg font-bold ${
+                      isActive 
+                        ? 'bg-primary/20 border-primary text-primary' 
+                        : 'bg-card border-border hover:bg-accent/50'
+                    }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Mobile Auth Section */}
+            <div className="border-t pt-6">
+              {user ? (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3 p-4 bg-card rounded-lg border">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.avatar} alt={user.name} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {user.name.split(' ').map(n => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-bold text-lg">{user.name}</p>
+                      <p className="text-sm text-muted-foreground font-medium">{user.email}</p>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={toggleTheme}
+                    className="w-full justify-start"
+                  >
+                    {mounted && (
+                      resolvedTheme === "dark" ? (
+                        <>
+                          <Sun className="w-4 h-4 mr-3" />
+                          Light Mode
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-4 h-4 mr-3" />
+                          Dark Mode
+                        </>
+                      )
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full justify-start text-destructive hover:text-destructive text-lg font-bold"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-5 h-5 mr-3" />
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={toggleTheme}
+                    className="w-full justify-start text-lg font-bold"
+                  >
+                    {mounted && (
+                      resolvedTheme === "dark" ? (
+                        <>
+                          <Sun className="w-5 h-5 mr-3" />
+                          Light Mode
+                        </>
+                      ) : (
+                        <>
+                          <Moon className="w-5 h-5 mr-3" />
+                          Dark Mode
+                        </>
+                      )
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    size="lg" 
+                    className="w-full btn-hero text-white text-lg font-bold" 
+                    asChild
+                  >
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                      Login
+                    </Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };

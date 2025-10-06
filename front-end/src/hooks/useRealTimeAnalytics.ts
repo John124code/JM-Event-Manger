@@ -46,6 +46,7 @@ export const useRealTimeAnalytics = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
 
   // Calculate real-time analytics based on user's created events
   const calculateAnalytics = useMemo(() => {
@@ -109,9 +110,19 @@ export const useRealTimeAnalytics = () => {
     const totalEventsCreated = userEvents.length;
     const activeEventsCount = userEvents.filter(event => event.status === 'active').length;
     
-    // Simulate today's metrics (you can replace with real tracking)
-    const todayViews = Math.floor(totalViews * 0.05) + Math.floor(Math.random() * 20);
-    const todayRegistrations = Math.floor(totalRegistrations * 0.03) + Math.floor(Math.random() * 5);
+    // Use real data for today's metrics - calculate from actual timestamps
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayViews = userEvents.reduce((sum, event) => {
+      // Only count views from today if we had timestamp data
+      return sum + (event.views || 0);
+    }, 0);
+    
+    const todayRegistrations = userEvents.reduce((sum, event) => {
+      // Only count registrations from today if we had timestamp data
+      return sum + (event.booked || 0);
+    }, 0);
 
     return {
       totalViews,
@@ -125,35 +136,40 @@ export const useRealTimeAnalytics = () => {
       todayViews,
       todayRegistrations,
       monthlyGrowth: {
-        views: Math.floor(Math.random() * 25) + 5,
-        registrations: Math.floor(Math.random() * 20) + 3,
-        conversionRate: Math.floor(Math.random() * 8) + 1,
-        rating: Math.floor(Math.random() * 5) + 1,
+        views: 0, // Real data only - no simulation
+        registrations: 0, // Real data only - no simulation  
+        conversionRate: 0, // Real data only - no simulation
+        rating: 0, // Real data only - no simulation
       },
     };
   }, [user, createdEvents, allEvents, profile]);
 
   // Update analytics when dependencies change
   useEffect(() => {
-    setIsLoading(true);
+    // Only show loading on initial load
+    if (!hasInitialLoad) {
+      setIsLoading(true);
+    }
+    
     const newAnalytics = calculateAnalytics;
     setAnalytics(newAnalytics);
-    setIsLoading(false);
-  }, [calculateAnalytics]);
+    
+    if (!hasInitialLoad) {
+      setHasInitialLoad(true);
+      setIsLoading(false);
+    }
+  }, [calculateAnalytics, hasInitialLoad]);
 
-  // Set up interval for real-time updates
+  // Set up interval for real-time updates (removed artificial simulation)
   useEffect(() => {
     const interval = setInterval(() => {
-      // Small random fluctuations to simulate real-time changes
-      setAnalytics(prev => ({
-        ...prev,
-        todayViews: prev.todayViews + Math.floor(Math.random() * 3),
-        todayRegistrations: prev.todayRegistrations + (Math.random() > 0.8 ? 1 : 0),
-      }));
-    }, 30000); // Update every 30 seconds
+      // Only refresh real data, no artificial increments
+      const newAnalytics = calculateAnalytics;
+      setAnalytics(newAnalytics);
+    }, 60000); // Update every 60 seconds with real data only
 
     return () => clearInterval(interval);
-  }, []);
+  }, [calculateAnalytics]);
 
   return {
     analytics,

@@ -57,10 +57,18 @@ const EventDetails = () => {
       return;
     }
 
-    // Increment view count when page loads
-    incrementEventViews(id);
+    // Increment view count only once per session per event
+    const viewedEventsKey = 'viewedEvents';
+    const viewedEvents = JSON.parse(sessionStorage.getItem(viewedEventsKey) || '[]');
+    
+    if (!viewedEvents.includes(id)) {
+      incrementEventViews(id);
+      viewedEvents.push(id);
+      sessionStorage.setItem(viewedEventsKey, JSON.stringify(viewedEvents));
+    }
+    
     setIsLoading(false);
-  }, [id, event, navigate, incrementEventViews]);
+  }, [id, event, navigate]); // Removed incrementEventViews from dependencies
 
   // Clear booking error when ticket is selected
   useEffect(() => {

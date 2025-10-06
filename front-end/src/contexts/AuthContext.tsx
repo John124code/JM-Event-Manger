@@ -106,47 +106,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      // First try the admin account (fallback for testing)
-      if (email === 'admin@jmevent.com' && password === 'admin123') {
-        const adminUser: User = {
-          id: 'admin-1',
-          name: 'JM Event Admin',
-          email: 'admin@jmevent.com',
-          role: 'admin',
-          joinedDate: new Date().toISOString(),
-          isVerified: true,
-          stats: {
-            eventsCreated: 0,
-            eventsAttended: 0,
-            totalRatings: 0,
-            averageRating: 0
-          }
-        };
-        
-        const mockToken = 'admin-mock-token-' + Date.now();
-        setUser(adminUser);
-        setToken(mockToken);
-        apiService.setToken(mockToken);
-        
-        // Save to localStorage
-        localStorage.setItem('authToken', mockToken);
-        localStorage.setItem('authUser', JSON.stringify(adminUser));
-        return;
-      }
-
-      // Try real API login
+      console.log('🔄 Attempting real backend login...');
+      
+      // ONLY use real API login - no more mock data!
       const response = await apiService.login(email, password);
       
       if (response.success && response.user && response.token) {
+        console.log('✅ Real backend authentication successful:', response.user);
         setUser(response.user);
         setToken(response.token);
         
         // Save to localStorage
         localStorage.setItem('authUser', JSON.stringify(response.user));
+        localStorage.setItem('authToken', response.token);
       } else {
-        throw new Error('Login failed');
+        throw new Error('Login failed - Invalid credentials');
       }
     } catch (err: any) {
+      console.error('❌ Backend authentication failed:', err);
       setError(err.message || 'Login failed');
       throw err;
     } finally {

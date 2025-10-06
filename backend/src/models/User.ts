@@ -9,8 +9,10 @@ export interface IUser extends Document {
   bio?: string;
   location?: string;
   role: 'user' | 'admin';
+  status: 'active' | 'banned' | 'suspended';
   isEmailVerified: boolean;
   isVerified?: boolean;
+  lastLogin?: Date;
   socialLinks?: {
     website?: string;
     twitter?: string;
@@ -65,6 +67,11 @@ const userSchema = new Schema<IUser>({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  status: {
+    type: String,
+    enum: ['active', 'banned', 'suspended'],
+    default: 'active'
+  },
   isEmailVerified: {
     type: Boolean,
     default: false
@@ -72,6 +79,10 @@ const userSchema = new Schema<IUser>({
   isVerified: {
     type: Boolean,
     default: false
+  },
+  lastLogin: {
+    type: Date,
+    default: null
   },
   socialLinks: {
     website: {

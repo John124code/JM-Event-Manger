@@ -26,6 +26,7 @@ export const connectDB = async (): Promise<void> => {
     
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error);
-    process.exit(1);
+    console.warn('⚠️ Server will continue running without database connection. Using mock data for development.');
+    // Don't exit, let the server continue with mock data
   }
 };

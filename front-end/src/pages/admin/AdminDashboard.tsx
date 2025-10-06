@@ -244,54 +244,67 @@ const AdminDashboardContent = () => {
 
           {/* Users & Events Management */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Recent Users */}
+            {/* All Registered Users */}
             <Card className="glass p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-foreground">Recent Users</h3>
-                <Link to="/admin/users">
-                  <Button variant="outline" size="sm" className="btn-glass">
-                    View All
-                  </Button>
-                </Link>
+                <h3 className="text-lg font-semibold text-foreground">All Registered Users ({users.length})</h3>
+                <Button variant="outline" size="sm" className="btn-glass">
+                  <Users className="w-4 h-4 mr-2" />
+                  Manage Users
+                </Button>
               </div>
               
-              <div className="space-y-3">
-                {users.slice(0, 5).map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="text-xs">
-                          {user.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">{user.email}</p>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {users.length > 0 ? (
+                  users.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg hover:bg-secondary/50 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="text-xs">
+                            {user.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{user.name}</p>
+                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {user.role === 'admin' ? '👑 Admin' : '👤 User'} • 
+                            Joined: {new Date(user.joinedDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {getStatusBadge(user.status)}
+                        {user.role !== 'admin' && (
+                          user.status === 'active' ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => banUser(user.id)}
+                              className="px-2 py-1 h-auto text-xs"
+                            >
+                              <UserX className="w-3 h-3" />
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              onClick={() => unbanUser(user.id)}
+                              className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 h-auto"
+                            >
+                              <UserCheck className="w-3 h-3" />
+                            </Button>
+                          )
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(user.status)}
-                      {user.status === 'active' ? (
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => banUser(user.id)}
-                          className="px-2 py-1 h-auto text-xs"
-                        >
-                          <UserX className="w-3 h-3" />
-                        </Button>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          onClick={() => unbanUser(user.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 h-auto"
-                        >
-                          <UserCheck className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-muted-foreground">No users registered yet</p>
+                    <p className="text-sm text-muted-foreground">Users will appear here when they register for events</p>
                   </div>
-                ))}
+                )}
               </div>
             </Card>
 

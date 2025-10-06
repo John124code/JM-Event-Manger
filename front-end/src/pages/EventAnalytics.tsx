@@ -2,6 +2,17 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useEvents } from "@/contexts/EventsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { 
+  fetchEventAnalytics,
+  fetchRegisteredUsers,
+  fetchEventFinancials,
+  exportEventData,
+  sendEventUpdate,
+  checkInAttendee,
+  type EventAnalyticsData,
+  type RegistrationDetails,
+  type EventFinancials
+} from "@/services/analyticsApi";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -24,37 +35,13 @@ import {
   Download,
   Mail,
   Phone,
-  AlertTriangle
+  AlertTriangle,
+  Check
 } from "lucide-react";
 
-interface EventAnalytics {
-  views: number;
-  registrations: number;
-  viewsThisWeek: number;
-  registrationsThisWeek: number;
-  conversionRate: number;
-  revenue: number;
-  averageRating: number;
-  totalReviews: number;
-  pageViews: {
-    date: string;
-    views: number;
-  }[];
-  registrationData: {
-    date: string;
-    registrations: number;
-  }[];
-}
-
-interface RegisteredUser {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  registrationDate: string;
-  ticketType: string;
-  paymentStatus: "paid" | "pending" | "refunded";
-}
+// Use types from API service
+type EventAnalytics = EventAnalyticsData;
+type RegisteredUser = RegistrationDetails;
 
 const EventAnalytics = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -63,7 +50,11 @@ const EventAnalytics = () => {
   const { getEventById, getRegisteredUsers } = useEvents();
   const [analytics, setAnalytics] = useState<EventAnalytics | null>(null);
   const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
+  const [financials, setFinancials] = useState<EventFinancials | null>(null);
   const [loading, setLoading] = useState(true);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const event = eventId ? getEventById(eventId) : null;
 
@@ -84,107 +75,101 @@ const EventAnalytics = () => {
       return;
     }
 
-    // Load analytics data (mock data for now)
+    // Load real-time analytics data
     loadAnalytics();
     loadRegisteredUsers();
+    loadFinancials();
   }, [user, event, navigate]);
 
   const loadAnalytics = async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!eventId) return;
     
-    // Mock analytics data
-    const mockAnalytics: EventAnalytics = {
-      views: 1250,
-      registrations: event?.booked || 0,
-      viewsThisWeek: 340,
-      registrationsThisWeek: 25,
-      conversionRate: ((event?.booked || 0) / 1250) * 100,
-      revenue: (event?.booked || 0) * 50, // Assuming $50 per ticket
-      averageRating: 4.6,
-      totalReviews: 23,
-      pageViews: [
-        { date: "2024-03-01", views: 45 },
-        { date: "2024-03-02", views: 67 },
-        { date: "2024-03-03", views: 89 },
-        { date: "2024-03-04", views: 123 },
-        { date: "2024-03-05", views: 156 },
-        { date: "2024-03-06", views: 134 },
-        { date: "2024-03-07", views: 201 },
-      ],
-      registrationData: [
-        { date: "2024-03-01", registrations: 5 },
-        { date: "2024-03-02", registrations: 8 },
-        { date: "2024-03-03", registrations: 12 },
-        { date: "2024-03-04", registrations: 15 },
-        { date: "2024-03-05", registrations: 19 },
-        { date: "2024-03-06", registrations: 22 },
-        { date: "2024-03-07", registrations: 25 },
-      ]
-    };
+    try {
+      setAnalyticsLoading(true);
+      setError(null);
+      
+      const analyticsData = await fetchEventAnalytics(eventId);
+      setAnalytics(analyticsData);
+    } catch (error) {
+      console.error('Failed to load analytics:', error);
+      setError('Failed to load analytics data. Please try again.');
+    } finally {
+      setAnalyticsLoading(false);
+      setLoading(false);
+    }
+  };
 
-    setAnalytics(mockAnalytics);
+  const loadFinancials = async () => {
+    if (!eventId) return;
+    
+    try {
+      const financialData = await fetchEventFinancials(eventId);
+      setFinancials(financialData);
+    } catch (error) {
+      console.error('Failed to load financials:', error);
+    }
   };
 
   const loadRegisteredUsers = async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!eventId) return;
     
-    // Mock registered users data
-    const mockUsers: RegisteredUser[] = [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john.doe@email.com",
-        phone: "+1 (555) 123-4567",
-        registrationDate: "2024-03-01",
-        ticketType: "General",
-        paymentStatus: "paid"
-      },
-      {
-        id: "2", 
-        name: "Jane Smith",
-        email: "jane.smith@email.com",
-        phone: "+1 (555) 987-6543",
-        registrationDate: "2024-03-02",
-        ticketType: "VIP",
-        paymentStatus: "paid"
-      },
-      {
-        id: "3",
-        name: "Bob Johnson",
-        email: "bob.johnson@email.com",
-        registrationDate: "2024-03-03",
-        ticketType: "Student",
-        paymentStatus: "pending"
-      }
-    ];
-
-    setRegisteredUsers(mockUsers);
-    setLoading(false);
+    try {
+      setUsersLoading(true);
+      const usersData = await fetchRegisteredUsers(eventId);
+      setRegisteredUsers(usersData);
+    } catch (error) {
+      console.error('Failed to load registered users:', error);
+      setError('Failed to load registered users. Please try again.');
+    } finally {
+      setUsersLoading(false);
+    }
   };
 
-  const sendEventUpdate = () => {
-    // In a real app, this would open a modal to compose and send notifications
-    alert("Event update notification feature coming soon!");
+  const handleCheckIn = async (registrationId: string) => {
+    if (!eventId) return;
+    
+    try {
+      await checkInAttendee(eventId, registrationId);
+      // Refresh the users list
+      loadRegisteredUsers();
+    } catch (error) {
+      console.error('Failed to check in attendee:', error);
+    }
   };
 
-  const exportAttendeeList = () => {
-    // In a real app, this would generate and download a CSV file
-    const csvContent = [
-      "Name,Email,Phone,Registration Date,Ticket Type,Payment Status",
-      ...registeredUsers.map(user => 
-        `${user.name},${user.email},${user.phone || 'N/A'},${user.registrationDate},${user.ticketType},${user.paymentStatus}`
-      )
-    ].join("\n");
+  const handleExportData = async (type: 'registrations' | 'analytics') => {
+    if (!eventId) return;
+    
+    try {
+      const blob = await exportEventData(eventId, type);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${event?.title}-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Failed to export data:', error);
+    }
+  };
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${event?.title || 'event'}-attendees.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  const handleSendUpdate = async (message: string, subject: string) => {
+    if (!eventId) return;
+    
+    try {
+      await sendEventUpdate(eventId, message, subject);
+      // Show success message
+    } catch (error) {
+      console.error('Failed to send update:', error);
+    }
+  };
+
+  const refreshData = () => {
+    loadAnalytics();
+    loadRegisteredUsers();
+    loadFinancials();
   };
 
   if (loading || !analytics || !event) {
@@ -222,17 +207,33 @@ const EventAnalytics = () => {
               </div>
               
               <div className="flex gap-3">
-                <Button onClick={sendEventUpdate} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => handleSendUpdate("", "")} className="bg-blue-600 hover:bg-blue-700">
                   <Mail className="w-4 h-4 mr-2" />
                   Send Update
                 </Button>
-                <Button variant="outline" onClick={exportAttendeeList}>
+                <Button variant="outline" onClick={() => handleExportData('registrations')}>
                   <Download className="w-4 h-4 mr-2" />
-                  Export List
+                  Export Registrations
+                </Button>
+                <Button variant="outline" onClick={() => handleExportData('analytics')}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Analytics
+                </Button>
+                <Button variant="outline" onClick={refreshData} disabled={analyticsLoading}>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  {analyticsLoading ? 'Refreshing...' : 'Refresh'}
                 </Button>
               </div>
             </div>
           </div>
+
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Analytics Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -240,8 +241,14 @@ const EventAnalytics = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Views</p>
-                  <p className="text-3xl font-bold text-foreground">{analytics.views.toLocaleString()}</p>
-                  <p className="text-sm text-green-600">+{analytics.viewsThisWeek} this week</p>
+                  {analyticsLoading ? (
+                    <div className="h-8 w-20 bg-muted animate-pulse rounded"></div>
+                  ) : (
+                    <p className="text-3xl font-bold text-foreground">{analytics.views.toLocaleString()}</p>
+                  )}
+                  {!analyticsLoading && (
+                    <p className="text-sm text-green-600">+{analytics.viewsThisWeek} this week</p>
+                  )}
                 </div>
                 <Eye className="w-8 h-8 text-blue-500" />
               </div>
@@ -251,8 +258,14 @@ const EventAnalytics = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Registrations</p>
-                  <p className="text-3xl font-bold text-foreground">{analytics.registrations}</p>
-                  <p className="text-sm text-green-600">+{analytics.registrationsThisWeek} this week</p>
+                  {analyticsLoading ? (
+                    <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+                  ) : (
+                    <p className="text-3xl font-bold text-foreground">{analytics.registrations}</p>
+                  )}
+                  {!analyticsLoading && (
+                    <p className="text-sm text-green-600">+{analytics.registrationsThisWeek} this week</p>
+                  )}
                 </div>
                 <Users className="w-8 h-8 text-green-500" />
               </div>
@@ -262,7 +275,11 @@ const EventAnalytics = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                  <p className="text-3xl font-bold text-foreground">{analytics.conversionRate.toFixed(1)}%</p>
+                  {analyticsLoading ? (
+                    <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
+                  ) : (
+                    <p className="text-3xl font-bold text-foreground">{analytics.conversionRate.toFixed(1)}%</p>
+                  )}
                   <p className="text-sm text-muted-foreground">Views to registrations</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-purple-500" />
@@ -273,7 +290,11 @@ const EventAnalytics = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Revenue</p>
-                  <p className="text-3xl font-bold text-foreground">${analytics.revenue.toLocaleString()}</p>
+                  {analyticsLoading ? (
+                    <div className="h-8 w-20 bg-muted animate-pulse rounded"></div>
+                  ) : (
+                    <p className="text-3xl font-bold text-foreground">${analytics.revenue.toLocaleString()}</p>
+                  )}
                   <p className="text-sm text-muted-foreground">Total earnings</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-yellow-500" />
@@ -333,14 +354,27 @@ const EventAnalytics = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  {usersLoading ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    </div>
+                  ) : registeredUsers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No registered attendees yet</p>
+                      <p className="text-sm">Registrations will appear here as people sign up</p>
+                    </div>
+                  ) : (
+                    <table className="w-full">
                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground">Name</th>
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground">Contact</th>
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ticket Type</th>
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Registration Date</th>
-                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Payment Status</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ticket Info</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Payment</th>
+                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Check-in</th>
                         <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                       </tr>
                     </thead>
@@ -365,34 +399,67 @@ const EventAnalytics = () => {
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <Badge variant={user.ticketType === "VIP" ? "default" : "secondary"}>
-                              {user.ticketType}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-4 text-muted-foreground">
-                            {new Date(user.registrationDate).toLocaleDateString()}
+                            <div className="space-y-1">
+                              <Badge variant={user.ticketType === "VIP" ? "default" : "secondary"}>
+                                {user.ticketType}
+                              </Badge>
+                              <div className="text-xs text-muted-foreground">
+                                Qty: {user.quantity || 1} • ${user.totalAmount || 0}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(user.registrationDate).toLocaleDateString()}
+                              </div>
+                            </div>
                           </td>
                           <td className="py-4 px-4">
-                            <Badge 
-                              variant={
-                                user.paymentStatus === "paid" ? "default" : 
-                                user.paymentStatus === "pending" ? "secondary" : "destructive"
-                              }
-                              className={
-                                user.paymentStatus === "paid" ? "bg-green-100 text-green-800" :
-                                user.paymentStatus === "pending" ? "bg-yellow-100 text-yellow-800" : ""
-                              }
-                            >
-                              {user.paymentStatus}
-                            </Badge>
+                            <div className="space-y-1">
+                              <Badge 
+                                variant={
+                                  user.paymentStatus === "completed" ? "default" : 
+                                  user.paymentStatus === "pending" ? "secondary" : "destructive"
+                                }
+                                className={
+                                  user.paymentStatus === "completed" ? "bg-green-100 text-green-800" :
+                                  user.paymentStatus === "pending" ? "bg-yellow-100 text-yellow-800" : ""
+                                }
+                              >
+                                {user.paymentStatus}
+                              </Badge>
+                              <div className="text-xs text-muted-foreground capitalize">
+                                {user.paymentMethod?.replace('_', ' ')}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="space-y-1">
+                              <Badge variant={user.checkInStatus ? "default" : "secondary"}>
+                                {user.checkInStatus ? "Checked In" : "Not Checked In"}
+                              </Badge>
+                              {user.checkInTime && (
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(user.checkInTime).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">
+                              {!user.checkInStatus && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleCheckIn(user.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <Check className="w-4 h-4 mr-1" />
+                                  Check In
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm" title="Send Email">
                                 <Mail className="w-4 h-4" />
                               </Button>
                               {user.phone && (
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" title="Call">
                                   <Phone className="w-4 h-4" />
                                 </Button>
                               )}
@@ -402,6 +469,7 @@ const EventAnalytics = () => {
                       ))}
                     </tbody>
                   </table>
+                  )}
                 </div>
               </Card>
             </TabsContent>

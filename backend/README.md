@@ -60,7 +60,7 @@ npm run build
 npm run dev
 ```
 
-The server will run on `http://localhost:5000`
+The server will run on `http://localhost:3001`
 
 ### Production
 
