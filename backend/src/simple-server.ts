@@ -17,11 +17,16 @@ import { AuthRequest } from './types/express';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Basic middleware
 app.use(cors({
-  origin: [process.env.CLIENT_URL || 'http://localhost:8084'],
+  origin: [
+    'http://localhost:8084',
+    'https://jm-events-platform.vercel.app',
+    'https://your-vercel-domain.vercel.app',
+    process.env.CLIENT_URL || 'http://localhost:8084'
+  ],
   credentials: true
 }));
 app.use(express.json());

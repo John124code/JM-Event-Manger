@@ -271,8 +271,8 @@ npm test
 - **GitHub Pages**
 
 #### Backend
-- **Railway** (Recommended)
-- **Render**
+- **Railway** 
+- **Render** (Recommended)
 - **Heroku**
 
 ### Deployment Steps
