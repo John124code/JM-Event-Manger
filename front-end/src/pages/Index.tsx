@@ -39,7 +39,7 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section with Your Background Images */}
-      <section className="relative h-screen overflow-hidden">
+      <section className="relative min-h-screen overflow-hidden">
         {/* Rotating Background Images */}
         <div className="absolute inset-0">
           {backgroundImages.map((image, index) => (
@@ -60,35 +60,35 @@ const Index = () => {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 flex items-center justify-center h-full">
+        <div className="relative z-10 flex items-center justify-center min-h-screen pt-16 pb-8 md:pt-0">
           <div className="text-center max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-6">
+            <div className="mb-6 mt-4 md:mt-0">
               <span className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium text-white mb-6">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Welcome to the Future of Events
               </span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-6 leading-tight text-white">
               Create Amazing
               <span className="bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent block">Events Together</span>
             </h1>
             
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed">
               Discover, create, and attend incredible events in your community. 
               Connect with like-minded people and make unforgettable memories.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <Link to="/events">
-                <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-8 py-6 text-lg">
+              <Link to="/events" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto bg-white text-purple-600 hover:bg-gray-100 px-6 py-4 md:px-8 md:py-6 text-base md:text-lg">
                   Browse Events
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 ml-2" />
                 </Button>
               </Link>
               
-              <Link to="/create">
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-purple-600 px-8 py-6 text-lg">
+              <Link to="/create" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto border-2 border-white text-white hover:bg-white hover:text-purple-600 bg-white/10 backdrop-blur-sm px-6 py-4 md:px-8 md:py-6 text-base md:text-lg font-semibold shadow-lg">
                   Create Event
                 </Button>
               </Link>
