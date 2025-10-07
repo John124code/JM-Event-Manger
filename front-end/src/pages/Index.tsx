@@ -5,9 +5,28 @@ import { EventCard } from "@/components/events/EventCard";
 import { useEvents } from "@/contexts/EventsContext";
 import { Calendar, Users, Sparkles, ArrowRight, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const Index = () => {
   const { featuredEvents } = useEvents();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Your requested background images
+  const backgroundImages = [
+    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80', // Concert crowd
+    'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80', // Wedding celebration
+    'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80', // Conference
+    'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80', // Party
+    'https://images.unsplash.com/photo-1505236858219-8359eb29e329?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'  // Birthday
+  ];
+
+  // Auto-change background images every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % backgroundImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const stats = [
     { label: "Active Events", value: "1,200+", icon: Calendar },
@@ -19,42 +38,77 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-16 hero-bg">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
+      {/* Hero Section with Your Background Images */}
+      <section className="relative h-screen overflow-hidden">
+        {/* Rotating Background Images */}
+        <div className="absolute inset-0">
+          {backgroundImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <img
+                src={image}
+                alt={`Event background ${index + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-900/80 via-pink-900/70 to-orange-900/80" />
+            </div>
+          ))}
+        </div>
+
+        {/* Hero Content */}
+        <div className="relative z-10 flex items-center justify-center h-full">
+          <div className="text-center max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-6">
-              <span className="inline-flex items-center px-4 py-2 glass rounded-full text-sm font-medium text-primary mb-6">
+              <span className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium text-white mb-6">
                 <Sparkles className="w-4 h-4 mr-2" />
                 Welcome to the Future of Events
               </span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight text-white">
               Create Amazing
-              <span className="text-gradient block">Events Together</span>
+              <span className="bg-gradient-to-r from-yellow-400 via-pink-400 to-purple-400 bg-clip-text text-transparent block">Events Together</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto leading-relaxed">
               Discover, create, and attend incredible events in your community. 
               Connect with like-minded people and make unforgettable memories.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
               <Link to="/events">
-                <Button size="lg" className="btn-hero text-white px-8 py-6 text-lg">
-                  Explore Events
+                <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-8 py-6 text-lg">
+                  Browse Events
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
               
               <Link to="/create">
-                <Button variant="outline" size="lg" className="btn-glass px-8 py-6 text-lg">
+                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-purple-600 px-8 py-6 text-lg">
                   Create Event
                 </Button>
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* Image indicators */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3">
+          {backgroundImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                index === currentImageIndex
+                  ? 'bg-white scale-125'
+                  : 'bg-white/50 hover:bg-white/80'
+              }`}
+            />
+          ))}
         </div>
       </section>
 
