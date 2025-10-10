@@ -1,5 +1,11 @@
 // API Service for backend communication
-const API_BASE_URL = 'http://localhost:3001/api';
+// Import the dynamic API configuration
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+const API_BASE_URL = isProduction 
+  ? 'https://jm-event-manger.onrender.com/api' 
+  : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+
+console.log('🔧 API Service initialized with URL:', API_BASE_URL);
 
 class ApiService {
   private baseUrl: string;

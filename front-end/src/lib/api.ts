@@ -9,6 +9,7 @@ const API_BASE_URL = isProduction
 console.log('🌐 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
 console.log('🔗 API Base URL:', API_BASE_URL);
 console.log('🏠 Hostname:', window.location.hostname);
+console.log('🛠️  API Configuration Loaded Successfully!');
 
 // API endpoints
 export const API_ENDPOINTS = {
