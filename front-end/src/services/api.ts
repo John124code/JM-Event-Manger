@@ -1,18 +1,24 @@
 // API Service for backend communication
 // Import the dynamic API configuration
-const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-const API_BASE_URL = isProduction 
-  ? 'https://jm-event-manger.onrender.com/api' 
-  : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
-
-console.log('🔧 API Service initialized with URL:', API_BASE_URL);
+function getApiBaseUrl() {
+  const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+  const url = isProduction 
+    ? 'https://jm-event-manger.onrender.com/api' 
+    : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+  
+  console.log('🔧 API Service initialized with URL:', url);
+  console.log('🌐 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+  console.log('🏠 Hostname:', window.location.hostname);
+  
+  return url;
+}
 
 class ApiService {
   private baseUrl: string;
   private token: string | null = null;
 
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
+  constructor() {
+    this.baseUrl = getApiBaseUrl();
     // Get token from localStorage if available
     this.token = localStorage.getItem('authToken');
   }

@@ -1,15 +1,11 @@
 // API configuration for connecting to backend
-// Use production URL if deployed, otherwise use localhost for development
+// This file is now deprecated - API configuration moved to services/api.ts
+// Keeping this file for any legacy imports that might still reference it
+
 const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
 const API_BASE_URL = isProduction 
   ? 'https://jm-event-manger.onrender.com/api' 
   : (import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
-
-// Debug logging
-console.log('🌐 Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
-console.log('🔗 API Base URL:', API_BASE_URL);
-console.log('🏠 Hostname:', window.location.hostname);
-console.log('🛠️  API Configuration Loaded Successfully!');
 
 // API endpoints
 export const API_ENDPOINTS = {
