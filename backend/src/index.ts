@@ -28,17 +28,26 @@ const limiter = rateLimit({
   }
 });
 
-// Middleware
-app.use(helmet()); // Security headers
-app.use(compression()); // Compress responses
-app.use(morgan('combined')); // Logging
-app.use(limiter); // Rate limiting
+// CORS must be before any routes or middleware that might handle requests
 app.use(cors({
   origin: true, // Allow all origins for universal browser access
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
+
+// Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Disable to prevent CORS issues
+})); // Security headers
+app.use(compression()); // Compress responses
+app.use(morgan('combined')); // Logging
+app.use(limiter); // Rate limiting
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
