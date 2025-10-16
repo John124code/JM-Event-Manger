@@ -44,8 +44,12 @@ class ApiService {
     const url = `${this.baseUrl}${endpoint}`;
     
     console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+    console.log(`🔑 Base URL: ${this.baseUrl}`);
+    console.log(`📍 Full URL: ${url}`);
     
     const config: RequestInit = {
+      mode: 'cors',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(this.token && { Authorization: `Bearer ${this.token}` }),
@@ -56,7 +60,14 @@ class ApiService {
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const response = await fetch(url, config);
+        console.log(`🔄 Attempt ${attempt + 1}/${retries + 1}`);
+        
+        // Add timeout wrapper for slow backend wake-up
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        
+        const response = await fetch(url, { ...config, signal: controller.signal });
+        clearTimeout(timeoutId);
         
         console.log(`📡 API Response: ${response.status} ${response.statusText}`);
         
