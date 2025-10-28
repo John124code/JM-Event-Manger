@@ -93,7 +93,8 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 CORS enabled for: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+  console.log(`🌐 CORS enabled for: ALL ORIGINS (origin: true)`);
+  console.log(`🔗 Available at: https://jm-event-manger.onrender.com`);
 });
 
 export default app;
