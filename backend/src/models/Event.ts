@@ -149,7 +149,8 @@ const eventSchema = new Schema<IEvent>({
   },
   time: {
     type: String,
-    required: [true, 'Event time is required']
+    required: false,
+    default: '00:00'
   },
   location: {
     type: String,
